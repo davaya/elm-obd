@@ -8,10 +8,10 @@ else:
     raise ImportError(f"Sorry: no implementation for platform ('{os.name}')")
 from time import sleep
 
-DEVICE = 'CH340'
+DEVICE = 'CH340'    # USB serial adapter reported by OBD-II device driver
 
 
-def find_port(device=None):
+def find_port(device=None):     # Find serial port used by device
     devport = ''
     i = -1
     while not devport:
@@ -19,7 +19,7 @@ def find_port(device=None):
         for port, desc, hwid in sorted(comports()):
             ports.append({'port': port, 'desc': desc, 'hwid': hwid})
             if device in desc:
-                return port
+                return port     # Found it
         if not (i := (i + 1) % 15):
             print(f'Waiting for device {device}, {[k["desc"] for k in ports]}')
         sleep(1)
@@ -27,10 +27,9 @@ def find_port(device=None):
 
 class Sp:
     def __init__(self, port=None):
-        self.port = port        # port name None if idle/waiting, name ('COM5') if connected
-        self.model = None       # OBD bridge model
-        self.status = ''
-        self.rsp = ''
+        self.port = port        # Serial port name
+        self.model = None       # OBD device model
+        self.response = ''      # Raw response string received from device
         self.Sc = None          # Serial port class
         self.connect()          # Connect to and initialize device
 
@@ -40,8 +39,8 @@ class Sp:
         while (t := t - 1) >= 0:
             rsp = self.Sc.read(100)
             if rsp.endswith(b'>'):
-                self.rsp = rsp.decode()
-                return [k for k in self.rsp.split('\r') if k][-2]
+                self.response = rsp.decode()
+                return [k for k in self.response.split('\r') if k][-2]
         raise RuntimeError(f'Timeout waiting for prompt, cmd={cmd}, rsp={rsp.decode()}')
 
     def connect(self):
